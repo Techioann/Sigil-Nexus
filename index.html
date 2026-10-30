@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d13">
+  <title>Sigil Nexus | Sztuka żywiołów</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles/main.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Sigil Nexus, strona główna"><span class="brand-mark">✧</span><span>SIGIL <b>NEXUS</b><small>SZTUKA ŻYWIOŁÓW</small></span></a>
+      <div class="top-note"><span class="status-dot"></span> ARKANA ŻYJĄ W TWOICH DŁONIACH</div>
+      <div class="edition">GRIMOIRE <span> / </span> 001</div>
+    </header>
+
+    <main>
+      <div class="page-heading"><div><div class="eyebrow"><span></span> PRÓBA ŻYWIOŁÓW <span></span></div><h1>Władaj <em>magią.</em></h1><p>Rysuj pradawne znaki. Łącz żywioły. Przetrwaj.</p></div><div class="heading-ornament" aria-hidden="true">✳</div></div>
+      <div class="game-layout">
+        <aside class="panel left-panel" aria-label="Status postaci">
+          <div class="panel-heading"><span>01 / WĘDROWIEC</span><span>✦</span></div>
+          <div class="character"><div class="avatar"><span>✧</span></div><div><div class="label">TWOJA POSTAĆ</div><h2>Mag runiczny</h2><p>Uczeń czterech żywiołów</p></div></div>
+          <div class="divider"></div>
+          <div class="meter-heading"><span><i class="symbol health-symbol">✚</i> ŻYCIE</span><strong id="health-value">100 / 100</strong></div>
+          <div class="meter"><div id="health-bar" class="meter-fill health-fill"></div></div>
+          <div class="meter-heading mana-heading"><span><i class="symbol mana-symbol">✦</i> MANA</span><strong id="mana-value">20 / 20</strong></div>
+          <div class="meter"><div id="mana-bar" class="meter-fill mana-fill"></div></div>
+          <div class="regen-line"><span>REGENERACJA</span><span>+1 / 2 SEK.</span></div><div class="regen-track"><div id="regen-bar"></div></div>
+          <div class="divider"></div>
+          <div class="section-title">PRZYGOTOWANE ZAKLĘCIE <span>✧</span></div>
+          <div class="spell-card"><div class="spell-icon">✳</div><div><div class="label">AKTYWNY SIGIL</div><strong id="spell-name">Brak zaklęcia</strong><p id="spell-detail">Narysuj znak, by przywołać moc.</p></div></div>
+          <div class="fusion-line"><span>OKNO FUZJI</span><span id="fusion-time">—</span></div><div class="regen-track fusion-track"><div id="fusion-bar"></div></div>
+          <div class="combat-result"><span>OSTATNI MNOŻNIK OBRAŻEŃ</span><strong id="damage-multiplier">—</strong></div>
+          <div id="combat-status" class="combat-status" role="status" aria-live="polite"></div>
+          <div class="panel-bottom">✧ &nbsp; WIEDZA JEST TWOJĄ BRONIĄ</div>
+        </aside>
+
+        <section class="arena-column" aria-label="Arena gry">
+          <div class="arena-top"><div><span class="live-dot"></span> ARENA <span class="arena-separator">/</span> <span id="arena-status">GOTOWOŚĆ</span></div></div>
+          <div class="network-status" role="status" aria-live="polite"><span class="network-dot" aria-hidden="true"></span><span id="network-status">OCZEKIWANIE NA POŁĄCZENIE</span><span id="network-detail"></span></div>
+          <div id="room-banner" class="room-banner" hidden><span>POKÓJ <strong id="room-code"></strong></span><button id="copy-room-button" type="button">KOPIUJ KOD</button><span id="copy-room-status" role="status" aria-live="polite"></span></div>
+          <button id="leave-room-button" class="room-leave-button" type="button" hidden>OPUŚĆ POKÓJ</button>
+          <div class="arena-frame"><canvas id="gameCanvas" width="960" height="640" aria-label="Arena gry. Poruszaj się klawiszami WASD i rysuj znaki myszą."></canvas>
+            <div id="overlay" class="overlay"><div class="overlay-inner"><div class="overlay-sigil">✧</div><div class="eyebrow">WEJDŹ DO KRĘGU</div><h2 id="overlay-title">Twoja magia czeka.</h2><p id="overlay-text">Przywołaj moc żywiołów i staw czoła temu, co kryje się w ciemności.</p><button id="start-button" class="primary-button" type="button">ROZPOCZNIJ PRÓBĘ <span>→</span></button></div></div>
+            <section id="room-menu" class="room-menu" aria-labelledby="room-title"><div class="room-menu-inner">
+              <div class="room-kicker">✧ &nbsp; SIGIL NEXUS / ONLINE</div>
+              <h2 id="room-title">Wejdź do <em>kręgu.</em></h2>
+              <p>Wybierz postać i imię, a następnie wejdź na wspólną arenę.</p>
+              <div class="character-select-heading"><span>WYBIERZ POSTAĆ</span><span>01 / 04</span></div>
+              <div id="character-cards" class="character-cards" role="group" aria-label="Wybór postaci"></div>
+              <div id="character-preview" class="character-preview" aria-live="polite">Wybierz postać, aby poznać jej statystyki.</div>
+              <label for="nickname">IMIĘ WĘDROWCA <span>3–16 ZNAKÓW</span></label>
+              <input id="nickname" type="text" minlength="3" maxlength="16" autocomplete="nickname" placeholder="Twoje imię" spellcheck="false">
+              <div class="room-actions"><button id="play-online-button" class="room-primary" type="button" disabled>GRAJ ONLINE <span>→</span></button><button id="create-room-button" type="button" disabled>UTWÓRZ PRYWATNY POKÓJ</button></div>
+              <div class="room-join"><label for="join-code">MASZ KOD POKOJU?</label><div><input id="join-code" type="text" maxlength="6" autocomplete="off" placeholder="Kod pokoju" aria-label="Kod pokoju"><button id="join-room-button" type="button" disabled>DOŁĄCZ <span>→</span></button></div></div>
+              <p id="room-feedback" class="room-feedback" role="status" aria-live="polite"></p>
+              <button id="retry-room-button" class="room-retry" type="button" hidden>SPRÓBUJ PONOWNIE ↻</button>
+            </div></section>
+            <div id="message" class="game-message" role="status" aria-live="polite"></div>
+          </div>
+          <div class="arena-footer"><span><b>✥</b> RYSUJ NA ARENIE, ABY PRZYWOŁAĆ ŻYWIOŁ</span><span>WASD <i>RUCH</i> &nbsp; · &nbsp; LPM <i>RYSUJ / ATAKUJ</i></span></div>
+          <button id="cast-button" class="cast-button" type="button">RZUĆ ZAKLĘCIE</button>
+        </section>
+
+        <aside class="panel right-panel" aria-label="Księga znaków">
+          <div class="panel-heading"><span>02 / GRIMOIRE</span><span>✦</span></div>
+          <h2>Księga znaków</h2><p class="panel-intro">Cztery żywioły. Nieskończona moc.</p>
+          <div class="sigil-list">
+            <div class="sigil-row"><span class="sigil water"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 8 C37 27 21 48 21 63 C21 81 33 92 50 92 C67 92 79 81 79 63 C79 48 63 27 50 8 Z"/></svg></span><div><strong>Woda</strong><small>Zamknij kroplę, wracając do punktu startu.</small></div><span class="sigil-number">01</span></div>
+            <div class="sigil-row"><span class="sigil fire"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M14 12 L70 31 L31 48 L85 66 L43 87"/></svg></span><div><strong>Ogień</strong><small>Kreśl zygzak w dół: cztery odcinki.</small></div><span class="sigil-number">02</span></div>
+            <div class="sigil-row"><span class="sigil earth"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 9 L86 50 L50 91 L14 50 Z"/></svg></span><div><strong>Ziemia</strong><small>Obrysuj i zamknij romb.</small></div><span class="sigil-number">03</span></div>
+            <div class="sigil-row"><span class="sigil wind"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M77 50 C77 22 35 14 18 42 C1 70 41 97 67 77 C89 60 75 37 53 38 C36 40 32 61 46 67 C59 72 68 56 58 50"/></svg></span><div><strong>Wiatr</strong><small>Kreśl spiralę do środka lub na zewnątrz.</small></div><span class="sigil-number">04</span></div>
+          </div>
+          <p class="sigil-guide">Każdy znak kreśl jedną linią. Kierunek może być odwrotny.</p>
+          <div class="element-cycle"><strong>PRZEWAGA ŻYWIOŁÓW</strong><p class="cycle-order">◉ Woda → ♨ Ogień → ◆ Ziemia → ◌ Wiatr → Woda</p><p>Każdy żywioł ma przewagę nad następnym (1,5×), a odporność na poprzedni (0,75×). Pozostałe trafienia: 1×. Mnożnik fuzji to średnia jej dwóch żywiołów.</p></div>
+          <div class="tip"><span>✦</span><p><strong>Połącz żywioły</strong><br>Narysuj drugi znak w ciągu 1 sekundy, aby stworzyć potężną fuzję.</p></div>
+          <div class="divider"></div><div class="section-title">OSTATNI ZNAK <span>✧</span></div>
+          <div class="diagnostics"><div><span>ROZPOZNANO</span><strong id="recognition-name">—</strong></div><div><span>PEWNOŚĆ</span><strong id="recognition-score">—</strong></div><div><span>PUNKTY</span><strong id="recognition-points">—</strong></div></div>
+          <button id="test-button" class="test-button" type="button">TEST ROZPOZNAWANIA <span>↗</span></button>
+        </aside>
+      </div>
+      <details class="multiplayer-help"><summary>Wspólna gra i połączenie</summary><p>Na jednym komputerze otwórz grę w dwóch kartach lub w sieci lokalnej użyj na obu urządzeniach adresu <code>http://ADRES-LAN-SERWERA:3000</code>. Aby spotkać znajomych w prywatnym pokoju, udostępnij im jego kod.</p><p>Jeśli połączenie nie działa, sprawdź adres, port i zaporę. Gra przez internet wymaga osobnego wdrożenia; strona HTTPS wymaga bezpiecznego połączenia WSS. Szczegóły znajdziesz w README.</p></details>
+      <div class="below"><span>✦ &nbsp; KAŻDY ZNAK MA ZNACZENIE</span><span>STWORZONE DLA POSZUKIWACZY MAGII &nbsp; ✦</span></div>
+    </main>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
