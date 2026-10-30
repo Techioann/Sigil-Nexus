@@ -11,6 +11,11 @@ export function createGameServer({ roomManager = new RoomManager(), inactivityMs
 const server = createServer(async (request, response) => {
   try {
     const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+    if (request.method === 'GET' && pathname === '/healthz') {
+      response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+      response.end(JSON.stringify({ status: 'ok' }));
+      return;
+    }
     if (pathname !== '/' && pathname !== '/index.html' && !pathname.startsWith('/src/') && !pathname.startsWith('/styles/')) {
       response.writeHead(404).end('Not found');
       return;
@@ -29,8 +34,9 @@ const server = createServer(async (request, response) => {
   }
 });
 const wss = new WebSocketServer({ noServer: true, maxPayload: 16384 });
+let shuttingDown = false;
 server.on('upgrade', (request, socket, head) => {
-  if (request.url !== '/ws') { socket.destroy(); return; }
+  if (shuttingDown || request.url !== '/ws') { socket.destroy(); return; }
   if (wss.clients.size >= 512) { socket.destroy(); return; }
   wss.handleUpgrade(request, socket, head, ws => wss.emit('connection', ws, request));
 });
@@ -93,10 +99,32 @@ const heartbeat = setInterval(() => {
   }
 }, Math.max(100, Math.min(10000, inactivityMs / 2)));
 server.on('close', () => { clearInterval(timer); clearInterval(heartbeat); for (const ws of wss.clients) ws.terminate(); wss.close(); });
-return { server, roomManager, wss };
+const shutdown = callback => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  clearInterval(timer);
+  clearInterval(heartbeat);
+  server.close(callback);
+  for (const ws of wss.clients) ws.close(1001, 'Server shutting down');
+};
+return { server, roomManager, wss, shutdown };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const port = process.env.PORT === undefined ? 3000 : Number(process.env.PORT);
-  createGameServer().server.listen(port, () => console.log(`Sigil Nexus running at http://localhost:${port}`));
+  const { server, wss, shutdown } = createGameServer();
+  server.listen(port, '0.0.0.0', () => console.log(`Sigil Nexus listening on 0.0.0.0:${port}`));
+  let stopping = false;
+  const stop = () => {
+    if (stopping) return;
+    stopping = true;
+    const fallback = setTimeout(() => {
+      for (const ws of wss.clients) ws.terminate();
+      server.closeAllConnections();
+      process.exit(0);
+    }, 5000);
+    shutdown(() => clearTimeout(fallback));
+  };
+  process.on('SIGTERM', stop);
+  process.on('SIGINT', stop);
 }
