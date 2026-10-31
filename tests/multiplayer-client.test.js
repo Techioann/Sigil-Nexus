@@ -94,7 +94,7 @@ test('room rejection stops retries and displays server error', () => {
   game.receive({ type: 'error', reason: 'room-not-found' });
   assert.equal(game.closed, true);
   assert.equal(game.roomStatus.status, 'error');
-  assert.match(game.roomStatus.detail, /pokoju/);
+  assert.deepEqual(game.roomStatus.detail, { key: 'error.room-not-found' });
 });
 
 test('remote snapshots interpolate positions rather than teleporting', () => {
@@ -183,7 +183,7 @@ test('directional casting works without a target and missing spells give feedbac
   const game = Object.create(Game.prototype);
   Object.assign(game, { status: 'playing', id: 'a', magic: { prepared: null }, camera: { x: 200, y: 300 }, width: 100, height: 80, remotePlayers: [], ui: { showMessage: message => messages.push(message) }, network: { send: message => { sent.push(message); return false; } } });
   game.cast({ x: 90, y: 10 });
-  assert.deepEqual(messages, ['Najpierw narysuj sygil — LPM']);
+  assert.deepEqual(messages, [{ key: 'game.drawFirst' }]);
   assert.equal(sent.length, 0);
   game.magic.prepared = { name: 'Water' };
   game.cast({ x: 90, y: 10 });

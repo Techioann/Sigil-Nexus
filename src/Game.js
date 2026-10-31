@@ -4,6 +4,7 @@ import InputManager from './InputManager.js';
 import NetworkClient from './NetworkClient.js';
 import { ELEMENTS } from './FusionSystem.js';
 import { SigilRecognizer, runDiagnostics } from './SigilRecognizer.js';
+import { t } from './i18n/index.js';
 
 export default class Game {
   constructor(canvas, ui) {
@@ -25,15 +26,15 @@ export default class Game {
     this.reset();
     this.network = new NetworkClient({
       onMessage: (message) => this.receive(message),
-      onStatus: (status, detail = '') => {
+      onStatus: (status) => {
         this.connectionStatus = status;
         if (status === 'connected') {
           this.network.send({ type: 'join', ...this.matchmaking });
-          this.ui.setRoomStatus?.({ status: 'connecting', detail: 'Dolaczanie do pokoju' });
+          this.ui.setRoomStatus?.({ status: 'connecting', detail: { key: 'game.joining' } });
           return;
         }
-        this.ui.setConnectionStatus?.(status, detail);
-        this.ui.setRoomStatus?.({ status, detail, code: this.roomCode });
+        this.ui.setConnectionStatus?.(status);
+        this.ui.setRoomStatus?.({ status, code: this.roomCode });
         if (status !== 'connected') {
           this.id = null; this.remotePlayers = []; this.projectiles = [];
           this.hasPlayerSnapshot = false;
@@ -82,9 +83,9 @@ export default class Game {
     nickname = typeof nickname === 'string' ? nickname.trim() : '';
     code = typeof code === 'string' ? code.trim().toUpperCase() : '';
     let detail = '';
-    if (nickname.length < 3 || nickname.length > 16) detail = 'Nick musi miec od 3 do 16 znakow';
-    else if (!['public', 'create', 'join'].includes(mode)) detail = 'Wybierz tryb pokoju';
-    else if (mode === 'join' && !/^[A-Z0-9]{6}$/.test(code)) detail = 'Kod pokoju musi miec 6 liter lub cyfr';
+    if (nickname.length < 3 || nickname.length > 16) detail = { key: 'game.nicknameInvalid' };
+    else if (!['public', 'create', 'join'].includes(mode)) detail = { key: 'game.modeInvalid' };
+    else if (mode === 'join' && !/^[A-Z0-9]{6}$/.test(code)) detail = { key: 'game.codeInvalid' };
     if (detail) { this.ui.setRoomStatus?.({ status: 'error', detail }); return false; }
     this.network.close();
     this.id = null;
@@ -146,21 +147,21 @@ export default class Game {
       this.seenHitEvents = new Set(events.map((event) => event.id));
       this.projectiles = (message.projectiles || []).map((data) => Object.assign(new Projectile(data.x, data.y, data.x + 1, data.y, { fused: false, damage: 0, color: data.color }), data));
     } else if (message.type === 'error' || (message.type === 'result' && !message.ok)) {
-      const errors = { 'insufficient-mana': 'Za malo many', 'room-full': 'Pokoj jest pelny', 'room-not-found': 'Nie znaleziono pokoju', 'invalid-code': 'Nieprawidlowy kod pokoju', 'invalid-nickname': 'Nieprawidlowy nick', 'invalid-character': 'Nieprawidlowa postac', 'invalid-mode': 'Nieprawidlowy tryb pokoju', 'code-unavailable': 'Nie mozna utworzyc kodu pokoju', 'no-spawn': 'Brak wolnego miejsca odrodzenia', 'respawn-wait': 'Poczekaj na odrodzenie', 'dead': 'Postac nie zyje', 'no-spell': 'Brak przygotowanego zaklecia', 'invalid-target': 'Nieprawidlowy cel' };
-      const detail = errors[message.reason] || `Akcja odrzucona: ${message.reason || 'blad serwera'}`;
+      const reasons = ['insufficient-mana', 'room-full', 'room-not-found', 'invalid-code', 'invalid-nickname', 'invalid-character', 'invalid-mode', 'code-unavailable', 'no-spawn', 'respawn-wait', 'dead', 'no-spell', 'invalid-target', 'invalid-input', 'invalid-path', 'invalid-element', 'invalid-command', 'alive'];
+      const detail = { key: reasons.includes(message.reason) ? `error.${message.reason}` : 'game.serverError' };
       if (message.type === 'error' || message.action === 'join') { this.network.close(); this.ui.setRoomStatus?.({ status: 'error', detail, code: this.roomCode }); }
       this.ui.showMessage(detail);
     } else if (message.type === 'result' && message.action === 'recognize' && message.spell) {
-      this.ui.showMessage(message.spell.name);
+      this.ui.showMessage({ key: `spell.${message.spell.id}` });
     }
   }
 
   gesture(points) {
     if (this.status !== 'playing') return;
     const result = this.recognizer.recognize(points);
-    this.lastRecognition = { name: result && result.score >= 0.75 ? ELEMENTS[result.name]?.name || result.name : 'Nie rozpoznano', score: result?.score ?? null, points: points.length };
+    this.lastRecognition = { name: result && result.score >= 0.75 ? result.name : null, score: result?.score ?? null, points: points.length };
     if (!result || result.score < 0.75) {
-      this.ui.showMessage('Nie rozpoznano znaku');
+      this.ui.showMessage({ key: 'game.unrecognized' });
       return;
     }
     this.trail = { points, color: ELEMENTS[result.name].color, life: 0.8 };
@@ -175,7 +176,7 @@ export default class Game {
     const x = point.x + this.camera.x - this.width / 2;
     const y = point.y + this.camera.y - this.height / 2;
     if (!this.magic.prepared) {
-      this.ui.showMessage('Najpierw narysuj sygil — LPM');
+      this.ui.showMessage({ key: 'game.drawFirst' });
       return;
     }
     this.network.send({ type: 'cast', x, y });
@@ -183,7 +184,7 @@ export default class Game {
 
   test() {
     const result = runDiagnostics();
-    this.ui.showMessage(result.passed ? 'Testy rozpoznawania: OK' : 'Testy rozpoznawania: blad', 3000);
+    this.ui.showMessage({ key: result.passed ? 'game.testPassed' : 'game.testFailed' }, 3000);
   }
 
   frame(time) {
@@ -247,10 +248,10 @@ export default class Game {
       if (player.health <= 0) continue;
       player.render(ctx);
       ctx.fillStyle = '#ffdb9c'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(player.name || `Gracz ${String(player.id).slice(0, 4)}`, player.x, player.y - 32);
+      ctx.fillText(player.name || t('game.player', { id: String(player.id).slice(0, 4) }), player.x, player.y - 32);
       if (ELEMENTS[player.element]) {
         ctx.fillStyle = ELEMENTS[player.element].color;
-        ctx.fillText(ELEMENTS[player.element].name, player.x, player.y + 34);
+        ctx.fillText(t(`element.${player.element}`), player.x, player.y + 34);
       }
       ctx.fillStyle = '#34202b'; ctx.fillRect(player.x - 18, player.y - 26, 36, 4);
       ctx.fillStyle = '#ff8297'; ctx.fillRect(player.x - 18, player.y - 26, 36 * Math.max(0, player.health / (player.maxHealth || 100)), 4);
@@ -263,12 +264,18 @@ export default class Game {
     for (const projectile of this.projectiles) projectile.render(ctx);
     for (const text of this.damageTexts) {
       ctx.save(); ctx.globalAlpha = Math.min(1, text.life); ctx.fillStyle = text.color || '#fff'; ctx.shadowColor = text.color || '#fff'; ctx.shadowBlur = 12;
+      if (text.spellId === 'lightning' && text.life > 0.95) {
+        ctx.globalAlpha = (text.life - 0.95) * 2;
+        ctx.fillStyle = '#f4ffff'; ctx.shadowColor = '#9cefff'; ctx.shadowBlur = 35;
+        ctx.beginPath(); ctx.arc(text.x, text.y, 30, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = Math.min(1, text.life); ctx.fillStyle = text.color || '#fff'; ctx.shadowBlur = 12;
+      }
       ctx.strokeStyle = text.color || '#fff'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(text.x, text.y, 16 + (1.2 - text.life) * 25, 0, Math.PI * 2); ctx.stroke();
       ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
       ctx.fillText(`${text.damage}  x${text.multiplier}`, text.x, text.y - 35 - (1.2 - text.life) * 25);
       ctx.font = 'bold 12px sans-serif';
-      ctx.fillText(({ strong: 'SUPER EFFECTIVE!', neutral: 'NEUTRAL', resistant: 'RESISTED' })[text.effectiveness] || '', text.x, text.y - 19 - (1.2 - text.life) * 25);
+      ctx.fillText(['strong', 'neutral', 'resistant'].includes(text.effectiveness) ? t(`combat.${text.effectiveness}`) : '', text.x, text.y - 19 - (1.2 - text.life) * 25);
       ctx.restore();
     }
     ctx.restore();

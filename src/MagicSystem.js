@@ -32,8 +32,9 @@ export class MagicSystem {
     const time = this.now();
     this.update(time);
     if (!Object.hasOwn(ELEMENTS, element)) return { ok: false, reason: 'invalid-element' };
-    if (this.mana < 1) return { ok: false, reason: 'insufficient-mana' };
-    this.mana -= 1;
+    const cost = this.fusion.pending ? 8 : 2;
+    if (this.mana < cost) return { ok: false, reason: 'insufficient-mana' };
+    this.mana -= cost;
     this.prepared = this.fusion.add(element, time);
     return { ok: true, spell: this.prepared, fused: this.prepared.fused };
   }

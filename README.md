@@ -21,6 +21,8 @@ Testy uruchomisz poleceniem `npm test` (lub `npm.cmd test` w PowerShellu).
 
 W menu wybierz jedną z czterech postaci, zapoznaj się z jej statystykami i wpisz imię o długości 3–16 znaków. Żadna postać nie jest wybrana domyślnie. **Graj online** dołącza do publicznej gry, **Utwórz prywatny pokój** tworzy osobną arenę, a **Dołącz** pozwala wejść sześcioliterowym lub cyfrowym kodem otrzymanym od znajomego. Przyciski są dostępne po poprawnym uzupełnieniu wymaganych danych. Wybór postaci pozostaje zachowany przy powrocie do menu pokoju. Pokoje są odizolowane i mieszczą do 20 graczy. Po utworzeniu pokoju skopiuj jego kod przyciskiem nad areną i przekaż go innym. Jeśli przeglądarka nie udostępnia schowka, zaznacz i skopiuj kod ręcznie. Kod pozwala dołączyć do pokoju; nie jest hasłem ani mechanizmem uwierzytelniania.
 
+Interfejs obsługuje angielski (domyślnie), polski, rosyjski i ukraiński. Język można zmienić w menu lub ustawieniach podczas gry bez rozłączania; wybór jest zapisywany w przeglądarce.
+
 Interfejs pokazuje stan łączenia, połączenie, rozłączenie i błędy. Gdy połączenie zostanie przerwane lub pokój jest niedostępny, sprawdź komunikat i użyj przycisku ponowienia albo popraw kod i spróbuj jeszcze raz. Kod może być nieprawidłowy, pokój może już nie istnieć lub być pełny, a serwer może być niedostępny. W razie restartu serwera bieżące pokoje i połączenia mogą zniknąć.
 
 ### Lokalnie i w sieci LAN
@@ -60,7 +62,7 @@ Plan Free może usypiać nieaktywną usługę: pierwsze żądanie po uśpieniu m
 - `W`, `A`, `S`, `D` lub strzałki: ruch.
 - Przytrzymaj lewy przycisk myszy i narysuj znak na arenie: kroplę wody, zygzak ognia, romb ziemi albo spiralę wiatru.
 - Kliknij prawym przyciskiem myszy na arenie, aby wystrzelić przygotowane zaklęcie w wybranym kierunku. Na arenie nie ma botów treningowych.
-- Drugi znak narysowany w ciągu sekundy łączy dwa żywioły w fuzję. Każdy przyjęty znak zużywa punkt many, która odnawia się z czasem.
+- Pierwszy przyjęty znak kosztuje 2 MP. Drugi ukończony w ciągu sekundy tworzy fuzję za dodatkowe 8 MP, czyli łącznie 10 MP. Przy braku dodatkowej many pierwsze zaklęcie pozostaje przygotowane. Mana odnawia się o 1 MP co 2 sekundy.
 
 Każdy znak rysuj jedną ciągłą linią. Kropla i romb są zamknięte; możesz zacząć w dowolnym miejscu ich obrysu i rysować w dowolnym kierunku. Ogień to otwarty zygzak z czterech odcinków. Spiralę wiatru można kreślić od środka lub od zewnątrz, w obu kierunkach. Wzory znajdują się w księdze znaków obok areny.
 

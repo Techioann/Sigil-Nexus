@@ -89,7 +89,7 @@ const timer = setInterval(() => {
   for (const room of roomManager.rooms) {
     room.world.tick(dt);
     const state = JSON.stringify(room.world.snapshot());
-    for (const { ws } of room.clients) if (ws.readyState === WebSocket.OPEN && ws.bufferedAmount < 65536) ws.send(state);
+    for (const { ws } of room.clients) if (ws?.readyState === WebSocket.OPEN && ws.bufferedAmount < 65536) ws.send(state);
   }
 }, 50);
 const heartbeat = setInterval(() => {

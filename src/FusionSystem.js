@@ -6,16 +6,16 @@ export const ELEMENTS = {
 };
 
 const FUSIONS = {
-  'water,water': ['Fala', '#56baff'],
-  'fire,water': ['Para', '#c8dce3'],
-  'earth,water': ['Błoto', '#94725a'],
-  'water,wind': ['Lód', '#9de9ff'],
-  'fire,fire': ['Wielki płomień', '#ff6932'],
-  'earth,fire': ['Lawa', '#f06b37'],
-  'fire,wind': ['Eksplozja', '#ffbf69'],
-  'earth,earth': ['Głaz', '#a18772'],
-  'earth,wind': ['Burza piaskowa', '#d6b574'],
-  'wind,wind': ['Tornado', '#82d8b4'],
+  'water,water': ['wave', 'Fala', '#56baff'],
+  'fire,water': ['steam', 'Para', '#c8dce3'],
+  'earth,water': ['plant', 'Roślina', '#65d978'],
+  'water,wind': ['ice', 'Lód', '#9de9ff'],
+  'fire,fire': ['inferno', 'Inferno', '#ff6932'],
+  'earth,fire': ['lava', 'Lawa', '#f06b37'],
+  'fire,wind': ['firestorm', 'Burza ogniowa', '#ff903f'],
+  'earth,earth': ['boulder', 'Głaz', '#a18772'],
+  'earth,wind': ['sandstorm', 'Burza piaskowa', '#d6b574'],
+  'wind,wind': ['lightning', 'Błyskawica', '#c2efff'],
 };
 
 export class FusionSystem {
@@ -41,12 +41,12 @@ export class FusionSystem {
     this.update(time);
     if (this.pending) {
       const elements = [this.pending.element, element];
-      const [name, color] = FUSIONS[[...elements].sort().join(',')];
+      const [id, name, color] = FUSIONS[[...elements].sort().join(',')];
       this.pending = null;
-      return { name, elements, color, damage: 20, fused: true };
+      return { id, name, elements, color, damage: 20, fused: true };
     }
     this.pending = { element, time };
-    return { ...ELEMENTS[element], elements: [element], damage: 10, fused: false };
+    return { id: element, ...ELEMENTS[element], elements: [element], damage: 10, fused: false };
   }
 
   clear() {

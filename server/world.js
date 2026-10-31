@@ -4,6 +4,12 @@ import { ElementalCombatSystem } from '../src/ElementalCombatSystem.js';
 import { SigilRecognizer } from '../src/SigilRecognizer.js';
 import { getCharacter } from '../src/characters.js';
 
+const publicSpell = (spell) => {
+  if (!spell) return null;
+  const { name, ...data } = spell;
+  return data;
+};
+
 export class World {
   constructor({ now = () => performance.now(), combatOptions = {} } = {}) {
     this.now = now;
@@ -71,7 +77,7 @@ export class World {
       const recognition = this.recognizer.recognize(points);
       if (!recognition || recognition.name !== message.element) return { action, ok: false, reason: 'invalid-path' };
       const result = player.magic.recognize(recognition.name);
-      return { action, ...result };
+      return { action, ...result, ...(result.spell ? { spell: publicSpell(result.spell) } : {}) };
     }
     if (action === 'cast') {
       if (player.health <= 0) return { action, ok: false, reason: 'dead' };
@@ -81,8 +87,8 @@ export class World {
       if (distance < 1e-6) return { action, ok: false, reason: 'invalid-target' };
       if (!player.magic.prepared) return { action, ok: false, reason: 'no-spell' };
       const spell = player.magic.consume();
-      this.projectiles.push({ id: randomUUID(), ownerId: id, x: player.x, y: player.y, dx: dx / distance, dy: dy / distance, radius: spell.fused ? 11 : 7, color: spell.color, spell, life: 2.5 });
-      return { action, ok: true, spell };
+      this.projectiles.push({ id: randomUUID(), ownerId: id, x: player.x, y: player.y, dx: dx / distance, dy: dy / distance, radius: spell.fused ? 11 : 7, color: spell.color, spellId: spell.id, spell, life: 2.5 });
+      return { action, ok: true, spell: publicSpell(spell) };
     }
     return { action, ok: false, reason: 'invalid-command' };
   }
@@ -129,7 +135,7 @@ export class World {
         const damage = this.combat.damage(projectile.spell, target.element);
         target.health = this.combat.remainingHealth(target.health, damage);
         if (target.health === 0) target.respawnAt = this.now() + 5000;
-        this.hitEvents.push({ id: randomUUID(), ownerId: projectile.ownerId, targetId: target.id, x: target.x, y: target.y, damage, multiplier, effectiveness: multiplier > 1 ? 'strong' : multiplier < 1 ? 'resistant' : 'neutral', color: projectile.color, time: this.now() });
+        this.hitEvents.push({ id: randomUUID(), ownerId: projectile.ownerId, targetId: target.id, x: target.x, y: target.y, damage, multiplier, effectiveness: multiplier > 1 ? 'strong' : multiplier < 1 ? 'resistant' : 'neutral', color: projectile.color, spellId: projectile.spellId, time: this.now() });
         projectile.life = 0;
       } else {
         projectile.x += projectile.dx * limit;
@@ -143,7 +149,7 @@ export class World {
   snapshot() {
     return {
       type: 'state',
-      players: [...this.players.values()].map(({ id, name, character, element, respawnAt, x, y, radius, health, maxHealth, magic }) => ({ id, name, character, element, respawnAt, respawnRemaining: respawnAt === null ? 0 : Math.max(0, respawnAt - this.now()), x, y, radius, health, maxHealth, mana: magic.mana, maxMana: magic.maxMana, prepared: magic.prepared, fusionRemaining: magic.fusionRemaining, regenProgress: magic.regenProgress })),
+      players: [...this.players.values()].map(({ id, name, character, element, respawnAt, x, y, radius, health, maxHealth, magic }) => ({ id, name, character, element, respawnAt, respawnRemaining: respawnAt === null ? 0 : Math.max(0, respawnAt - this.now()), x, y, radius, health, maxHealth, mana: magic.mana, maxMana: magic.maxMana, prepared: publicSpell(magic.prepared), fusionRemaining: magic.fusionRemaining, regenProgress: magic.regenProgress })),
       enemies: [],
       hitEvents: this.hitEvents.map(({ time, ...event }) => event),
       projectiles: this.projectiles.map(({ spell, life, ...projectile }) => projectile),

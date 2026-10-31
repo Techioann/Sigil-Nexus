@@ -53,10 +53,10 @@ test('all characters cast every sigil, retain affinity, regenerate and respawn w
       assert.equal(snapshot.character, config.id);
       assert.equal(snapshot.element, config.id);
     }
-    assert.equal(player.magic.mana, config.maxMana - 4);
+    assert.equal(player.magic.mana, config.maxMana - 20);
     now += 2000;
     world.tick(0);
-    assert.equal(player.magic.mana, config.maxMana - 3);
+    assert.equal(player.magic.mana, config.maxMana - 19);
     player.health = 0;
     player.maxHealth = 1;
     player.speed = 1;

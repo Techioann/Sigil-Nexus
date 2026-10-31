@@ -13,7 +13,7 @@
     <header class="topbar">
       <a class="brand" href="./" aria-label="Sigil Nexus, strona główna"><span class="brand-mark">✧</span><span>SIGIL <b>NEXUS</b><small>SZTUKA ŻYWIOŁÓW</small></span></a>
       <div class="top-note"><span class="status-dot"></span> ARKANA ŻYJĄ W TWOICH DŁONIACH</div>
-      <div class="edition">GRIMOIRE <span> / </span> 001</div>
+      <div class="language-controls"><label for="menu-language" data-i18n="language.label">Language</label><select id="menu-language" aria-label="Language"><option value="en">English</option><option value="pl">Polski</option><option value="ru">Русский</option><option value="uk">Українська</option></select><button id="settings-open" type="button" data-i18n="settings.open">Settings</button></div>
     </header>
 
     <main>
@@ -84,6 +84,9 @@
       <div class="below"><span>✦ &nbsp; KAŻDY ZNAK MA ZNACZENIE</span><span>STWORZONE DLA POSZUKIWACZY MAGII &nbsp; ✦</span></div>
     </main>
   </div>
+  <section id="settings" class="settings" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+    <div class="settings-panel"><div class="settings-header"><h2 id="settings-title" data-i18n="settings.title">Settings</h2><button id="settings-close" type="button" aria-label="Close">×</button></div><label for="settings-language" data-i18n="language.label">Language</label><select id="settings-language" aria-label="Language"><option value="en">English</option><option value="pl">Polski</option><option value="ru">Русский</option><option value="uk">Українська</option></select></div>
+  </section>
   <section id="tutorial" class="tutorial" aria-labelledby="tutorial-title" hidden>
     <header class="tutorial-header"><div><div class="eyebrow">GRIMOIRE / NAUKA MAGII</div><h2 id="tutorial-title">Poznaj znaki</h2></div><button id="tutorial-close" type="button" aria-label="Zamknij pomoc">×</button></header>
     <p class="tutorial-notice">Gra trwa również podczas czytania pomocy.</p>

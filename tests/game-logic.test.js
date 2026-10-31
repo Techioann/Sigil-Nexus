@@ -43,25 +43,27 @@ test('recognizer rejects strokes at the length threshold and accepts longer matc
 });
 
 const pairs = [
-  ['water', 'water', 'Fala'],
-  ['water', 'fire', 'Para'],
-  ['water', 'earth', 'Błoto'],
-  ['water', 'wind', 'Lód'],
-  ['fire', 'fire', 'Wielki płomień'],
-  ['fire', 'earth', 'Lawa'],
-  ['fire', 'wind', 'Eksplozja'],
-  ['earth', 'earth', 'Głaz'],
-  ['earth', 'wind', 'Burza piaskowa'],
-  ['wind', 'wind', 'Tornado'],
+  ['water', 'water', 'wave'],
+  ['water', 'fire', 'steam'],
+  ['water', 'earth', 'plant'],
+  ['water', 'wind', 'ice'],
+  ['fire', 'fire', 'inferno'],
+  ['fire', 'earth', 'lava'],
+  ['fire', 'wind', 'firestorm'],
+  ['earth', 'earth', 'boulder'],
+  ['earth', 'wind', 'sandstorm'],
+  ['wind', 'wind', 'lightning'],
 ];
 
 test('every fusion pair is order independent and deals fusion damage', () => {
-  for (const [first, second, name] of pairs) {
+  for (const [first, second, id] of pairs) {
     for (const [a, b] of [[first, second], [second, first]]) {
       const fusion = new FusionSystem({ now: () => 0 });
-      assert.equal(fusion.add(a).damage, 10);
+      const basic = fusion.add(a);
+      assert.equal(basic.id, a);
+      assert.equal(basic.damage, 10);
       const spell = fusion.add(b);
-      assert.equal(spell.name, name, `${a} + ${b}`);
+      assert.equal(spell.id, id, `${a} + ${b}`);
       assert.equal(spell.damage, 20);
       assert.equal(spell.fused, true);
       assert.equal(fusion.add(a).fused, false, 'a fusion cannot chain');
@@ -84,10 +86,10 @@ test('fusion window includes exactly 1000ms and expires immediately after', () =
 
 test('mana is spent only on accepted gestures and regeneration is time based', () => {
   let time = 0;
-  const magic = new MagicSystem({ now: () => time, maxMana: 2 });
-  assert.equal(magic.mana, 2);
+  const magic = new MagicSystem({ now: () => time, maxMana: 10 });
+  assert.equal(magic.mana, 10);
   assert.equal(magic.recognize('invalid').reason, 'invalid-element');
-  assert.equal(magic.mana, 2);
+  assert.equal(magic.mana, 10);
   assert.equal(magic.recognize('water').ok, true);
   assert.equal(magic.recognize('fire').fused, true);
   const prepared = magic.prepared;
@@ -102,9 +104,38 @@ test('mana is spent only on accepted gestures and regeneration is time based', (
   assert.equal(magic.mana, 1);
   time = 8000;
   magic.update();
-  assert.equal(magic.mana, 2);
+  assert.equal(magic.mana, 4);
   assert.equal(magic.consume(), prepared);
   assert.equal(magic.consume(), null);
+});
+
+test('fusion charges eight at the inclusive boundary and failed attempts preserve pending state', () => {
+  let time = 0;
+  const magic = new MagicSystem({ now: () => time, maxMana: 9 });
+  const first = magic.recognize('water').spell;
+  const pending = magic.fusion.pending;
+  assert.equal(magic.mana, 7);
+  time = 1000;
+  assert.equal(magic.recognize('fire').reason, 'insufficient-mana');
+  assert.equal(magic.mana, 7);
+  assert.equal(magic.prepared, first);
+  assert.equal(magic.fusion.pending, pending);
+  magic.mana = 8;
+  assert.equal(magic.recognize('fire').spell.id, 'steam');
+  assert.equal(magic.mana, 0);
+  assert.equal(magic.consume().id, 'steam');
+  assert.equal(magic.consume(), null);
+});
+
+test('expired pending spell makes the next gesture a two mana basic', () => {
+  let time = 0;
+  const magic = new MagicSystem({ now: () => time, maxMana: 4 });
+  magic.recognize('water');
+  time = 1001;
+  const result = magic.recognize('earth');
+  assert.equal(result.spell.id, 'earth');
+  assert.equal(result.fused, false);
+  assert.equal(magic.mana, 0);
 });
 
 test('expired fusion leaves the prepared spell available and consumption clears the window', () => {
