@@ -55,9 +55,11 @@ Plan Free może usypiać nieaktywną usługę: pierwsze żądanie po uśpieniu m
 
 ## Sterowanie
 
+- Pomoc otwiera przycisk **POMOC** lub `H`; `H` i `Escape` zamykają panel. Skróty nie działają podczas wpisywania tekstu. Pomoc nie zatrzymuje gry.
+- Po pierwszym wejściu na arenę pojawia się samouczek. **Gotowe** i **Pomiń** zapisują wybór w lokalnej pamięci przeglądarki; pomoc można później otworzyć ponownie. Ćwiczenia znaków działają lokalnie, bez wysyłania danych i bez zużywania many.
 - `W`, `A`, `S`, `D` lub strzałki: ruch.
 - Przytrzymaj lewy przycisk myszy i narysuj znak na arenie: kroplę wody, zygzak ognia, romb ziemi albo spiralę wiatru.
-- Kliknij innego gracza, aby wystrzelić przygotowane zaklęcie. Na arenie nie ma botów treningowych.
+- Kliknij prawym przyciskiem myszy na arenie, aby wystrzelić przygotowane zaklęcie w wybranym kierunku. Na arenie nie ma botów treningowych.
 - Drugi znak narysowany w ciągu sekundy łączy dwa żywioły w fuzję. Każdy przyjęty znak zużywa punkt many, która odnawia się z czasem.
 
 Każdy znak rysuj jedną ciągłą linią. Kropla i romb są zamknięte; możesz zacząć w dowolnym miejscu ich obrysu i rysować w dowolnym kierunku. Ogień to otwarty zygzak z czterech odcinków. Spiralę wiatru można kreślić od środka lub od zewnątrz, w obu kierunkach. Wzory znajdują się w księdze znaków obok areny.

@@ -15,7 +15,11 @@ export default class Game {
     this.recognizer = new SigilRecognizer({ scoreThreshold: 0 });
     this.input = new InputManager(canvas, {
       onGesture: (points) => this.gesture(points),
-      onClick: (point) => this.cast(point),
+      onAttack: (point) => this.cast(point),
+      onStop: () => {
+        if (this.status === 'playing') this.network?.send({ type: 'input', x: 0, y: 0 });
+        this.lastInputX = 0; this.lastInputY = 0;
+      },
     });
     this.status = 'ready';
     this.reset();
@@ -39,7 +43,7 @@ export default class Game {
         }
       },
     });
-    ui.setCallbacks({ start: () => this.start(), restart: () => this.restart(), cast: () => this.cast(this.input.pointer), test: () => this.test(), joinRoom: (options) => this.joinRoom(options), retry: () => this.retry(), leaveRoom: () => this.leaveRoom() });
+    ui.setCallbacks({ start: () => this.start(), restart: () => this.restart(), test: () => this.test(), joinRoom: (options) => this.joinRoom(options), retry: () => this.retry(), leaveRoom: () => this.leaveRoom() });
     this.frame = this.frame.bind(this);
     requestAnimationFrame(this.frame);
   }
@@ -170,10 +174,11 @@ export default class Game {
     if (this.status !== 'playing' || !point || !this.id) return;
     const x = point.x + this.camera.x - this.width / 2;
     const y = point.y + this.camera.y - this.height / 2;
-    const target = this.remotePlayers.find((entity) => entity.id && entity.health > 0 && Math.hypot(x - entity.x, y - entity.y) <= entity.radius);
-    if (target) {
-      this.network.send({ type: 'cast', targetId: target.id });
+    if (!this.magic.prepared) {
+      this.ui.showMessage('Najpierw narysuj sygil — LPM');
+      return;
     }
+    this.network.send({ type: 'cast', x, y });
   }
 
   test() {

@@ -39,7 +39,7 @@ export class World {
 
   leave(id) {
     this.players.delete(id);
-    this.projectiles = this.projectiles.filter(p => p.ownerId !== id && p.targetId !== id);
+    this.projectiles = this.projectiles.filter(p => p.ownerId !== id);
   }
 
   command(id, message) {
@@ -53,7 +53,7 @@ export class World {
       if (!spawn) return { action, ok: false, reason: 'no-spawn' };
       const config = getCharacter(player.character);
       Object.assign(player, spawn, { element: config.element, speed: config.speed, health: config.maxHealth, maxHealth: config.maxHealth, respawnAt: null, input: { x: 0, y: 0 }, inputTime: this.now(), magic: new MagicSystem({ now: this.now, maxMana: config.maxMana }) });
-      this.projectiles = this.projectiles.filter(p => p.ownerId !== id && p.targetId !== id);
+      this.projectiles = this.projectiles.filter(p => p.ownerId !== id);
       return { action, ok: true };
     }
     if (action === 'input') {
@@ -74,13 +74,15 @@ export class World {
       return { action, ...result };
     }
     if (action === 'cast') {
-      const target = this.players.get(message.targetId);
       if (player.health <= 0) return { action, ok: false, reason: 'dead' };
-      if (!target || target === player || target.health <= 0) return { action, ok: false, reason: 'invalid-target' };
+      if (!Number.isFinite(message.x) || !Number.isFinite(message.y) || Math.abs(message.x) > 100000 || Math.abs(message.y) > 100000) return { action, ok: false, reason: 'invalid-target' };
+      const dx = message.x - player.x, dy = message.y - player.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance < 1e-6) return { action, ok: false, reason: 'invalid-target' };
       if (!player.magic.prepared) return { action, ok: false, reason: 'no-spell' };
       const spell = player.magic.consume();
-      this.projectiles.push({ id: randomUUID(), ownerId: id, targetId: target.id, x: player.x, y: player.y, radius: spell.fused ? 11 : 7, color: spell.color, spell, life: 2.5 });
-      return { action, ok: true, spell, targetId: target.id };
+      this.projectiles.push({ id: randomUUID(), ownerId: id, x: player.x, y: player.y, dx: dx / distance, dy: dy / distance, radius: spell.fused ? 11 : 7, color: spell.color, spell, life: 2.5 });
+      return { action, ok: true, spell };
     }
     return { action, ok: false, reason: 'invalid-command' };
   }
@@ -102,22 +104,37 @@ export class World {
       }
     }
     for (const projectile of this.projectiles) {
-      const target = this.players.get(projectile.targetId);
+      const travel = 420 * Math.min(dt, projectile.life);
+      let limit = travel;
+      if (projectile.dx > 0) limit = Math.min(limit, (3000 - projectile.x) / projectile.dx);
+      if (projectile.dx < 0) limit = Math.min(limit, -projectile.x / projectile.dx);
+      if (projectile.dy > 0) limit = Math.min(limit, (3000 - projectile.y) / projectile.dy);
+      if (projectile.dy < 0) limit = Math.min(limit, -projectile.y / projectile.dy);
+      let target = null, closest = Infinity;
+      for (const candidate of this.players.values()) {
+        if (candidate.id === projectile.ownerId || candidate.health <= 0) continue;
+        const dx = candidate.x - projectile.x, dy = candidate.y - projectile.y;
+        const along = dx * projectile.dx + dy * projectile.dy;
+        const radius = projectile.radius + candidate.radius;
+        const perpendicular2 = dx * dx + dy * dy - along * along;
+        if (perpendicular2 > radius * radius) continue;
+        const halfChord = Math.sqrt(Math.max(0, radius * radius - perpendicular2));
+        if (along + halfChord < 0) continue;
+        const hit = Math.max(0, along - halfChord);
+        if (hit <= limit && hit < closest) { closest = hit; target = candidate; }
+      }
       projectile.life -= dt;
-      if (!target || target.health <= 0) { projectile.life = 0; continue; }
-      const dx = target.x - projectile.x, dy = target.y - projectile.y;
-      const distance = Math.hypot(dx, dy);
-      const travel = 420 * dt;
-      if (distance <= travel + projectile.radius + target.radius) {
+      if (target) {
         const multiplier = this.combat.multiplier(projectile.spell.elements, target.element);
         const damage = this.combat.damage(projectile.spell, target.element);
         target.health = this.combat.remainingHealth(target.health, damage);
         if (target.health === 0) target.respawnAt = this.now() + 5000;
         this.hitEvents.push({ id: randomUUID(), ownerId: projectile.ownerId, targetId: target.id, x: target.x, y: target.y, damage, multiplier, effectiveness: multiplier > 1 ? 'strong' : multiplier < 1 ? 'resistant' : 'neutral', color: projectile.color, time: this.now() });
         projectile.life = 0;
-      } else if (distance > 0) {
-        projectile.x += dx / distance * travel;
-        projectile.y += dy / distance * travel;
+      } else {
+        projectile.x += projectile.dx * limit;
+        projectile.y += projectile.dy * limit;
+        if (limit < travel || projectile.x <= 0 || projectile.x >= 3000 || projectile.y <= 0 || projectile.y >= 3000) projectile.life = 0;
       }
     }
     this.projectiles = this.projectiles.filter(p => p.life > 0);

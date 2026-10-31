@@ -32,7 +32,7 @@ test('pvp damage uses target character element and enforces respawn cooldown', (
   assert.equal(recognize(world, b, 'fire', fire).ok, true);
   assert.equal(recognize(world, a, 'water', water).ok, true);
   target.health = 1;
-  assert.equal(world.command(a, { type: 'cast', targetId: b }).ok, true);
+  assert.equal(world.command(a, { type: 'cast', x: target.x, y: target.y }).ok, true);
   for (let i = 0; i < 10 && target.health; i++) world.tick(0.1);
   assert.equal(target.health, 0);
   assert.equal(world.snapshot().hitEvents[0].damage, 15);
@@ -42,6 +42,49 @@ test('pvp damage uses target character element and enforces respawn cooldown', (
   assert.equal(world.command(b, { type: 'respawn' }).ok, true);
   assert.equal(target.element, 'fire');
   assert.equal(target.health, 100);
+});
+
+test('directional projectiles validate aim, sweep nearest player, and preserve mana', () => {
+  const world = new World();
+  const a = world.join(), b = world.join(), c = world.join();
+  const shooter = world.players.get(a), near = world.players.get(b), far = world.players.get(c);
+  Object.assign(shooter, { x: 100, y: 100 });
+  Object.assign(near, { x: 160, y: 100 });
+  Object.assign(far, { x: 200, y: 100 });
+  recognize(world, a, 'water', water);
+  const mana = shooter.magic.mana;
+  for (const aim of [{ x: 100, y: 100 }, { x: NaN, y: 0 }, { x: Infinity, y: 0 }, { x: 100001, y: 0 }, { x: '200', y: 100 }]) {
+    assert.equal(world.command(a, { type: 'cast', ...aim }).reason, 'invalid-target');
+    assert.ok(shooter.magic.prepared);
+  }
+  assert.equal(world.command(a, { type: 'cast', x: 101, y: 100 }).ok, true);
+  assert.equal(shooter.magic.mana, mana);
+  assert.equal(shooter.magic.prepared, null);
+  assert.equal(world.command(a, { type: 'cast', x: 200, y: 100 }).reason, 'no-spell');
+  world.tick(0.1);
+  assert.equal(near.health, 85);
+  assert.equal(far.health, 100);
+  assert.equal(shooter.health, 100);
+  assert.equal(world.snapshot().hitEvents[0].targetId, b);
+  assert.equal(world.projectiles.length, 0);
+});
+
+test('projectiles fly straight past missed players and despawn at range and world edge', () => {
+  const world = new World();
+  const a = world.join(), b = world.join();
+  const shooter = world.players.get(a), target = world.players.get(b);
+  Object.assign(shooter, { x: 100, y: 100 });
+  Object.assign(target, { x: 200, y: 150 });
+  recognize(world, a, 'water', water);
+  world.command(a, { type: 'cast', x: 200, y: 100 });
+  for (let i = 0; i < 26; i++) world.tick(0.1);
+  assert.equal(target.health, 100);
+  assert.equal(world.projectiles.length, 0);
+  Object.assign(shooter, { x: 2990, y: 100 });
+  recognize(world, a, 'water', water);
+  world.command(a, { type: 'cast', x: 3001, y: 100 });
+  world.tick(0.1);
+  assert.equal(world.projectiles.length, 0);
 });
 
 test('players cannot walk through one another and separate worlds remain isolated', () => {

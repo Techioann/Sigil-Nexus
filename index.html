@@ -17,7 +17,7 @@
     </header>
 
     <main>
-      <div class="page-heading"><div><div class="eyebrow"><span></span> PRÓBA ŻYWIOŁÓW <span></span></div><h1>Władaj <em>magią.</em></h1><p>Rysuj pradawne znaki. Łącz żywioły. Przetrwaj.</p></div><div class="heading-ornament" aria-hidden="true">✳</div></div>
+      <div class="page-heading"><div><div class="eyebrow"><span></span> PRÓBA ŻYWIOŁÓW <span></span></div><h1>Władaj <em>magią.</em></h1><p>Rysuj pradawne znaki. Łącz żywioły. Przetrwaj.</p></div><button id="tutorial-help" class="tutorial-help" type="button">POMOC / H</button></div>
       <div class="game-layout">
         <aside class="panel left-panel" aria-label="Status postaci">
           <div class="panel-heading"><span>01 / WĘDROWIEC</span><span>✦</span></div>
@@ -30,7 +30,7 @@
           <div class="regen-line"><span>REGENERACJA</span><span>+1 / 2 SEK.</span></div><div class="regen-track"><div id="regen-bar"></div></div>
           <div class="divider"></div>
           <div class="section-title">PRZYGOTOWANE ZAKLĘCIE <span>✧</span></div>
-          <div class="spell-card"><div class="spell-icon">✳</div><div><div class="label">AKTYWNY SIGIL</div><strong id="spell-name">Brak zaklęcia</strong><p id="spell-detail">Narysuj znak, by przywołać moc.</p></div></div>
+          <div class="spell-card"><div id="spell-icon" class="spell-icon">✳</div><div><div class="label">AKTYWNY SIGIL</div><strong id="spell-name">Brak zaklęcia</strong><p id="spell-detail">Narysuj znak, by przywołać moc.</p></div></div>
           <div class="fusion-line"><span>OKNO FUZJI</span><span id="fusion-time">—</span></div><div class="regen-track fusion-track"><div id="fusion-bar"></div></div>
           <div class="combat-result"><span>OSTATNI MNOŻNIK OBRAŻEŃ</span><strong id="damage-multiplier">—</strong></div>
           <div id="combat-status" class="combat-status" role="status" aria-live="polite"></div>
@@ -60,8 +60,7 @@
             </div></section>
             <div id="message" class="game-message" role="status" aria-live="polite"></div>
           </div>
-          <div class="arena-footer"><span><b>✥</b> RYSUJ NA ARENIE, ABY PRZYWOŁAĆ ŻYWIOŁ</span><span>WASD <i>RUCH</i> &nbsp; · &nbsp; LPM <i>RYSUJ / ATAKUJ</i></span></div>
-          <button id="cast-button" class="cast-button" type="button">RZUĆ ZAKLĘCIE</button>
+          <div class="arena-footer"><span><b>✥</b> ZNAK: 1 MANA · H: POMOC</span><span>WASD / STRZAŁKI <i>RUCH</i> &nbsp; · &nbsp; LPM <i>RYSUJ</i> &nbsp; · &nbsp; PPM <i>ATAKUJ</i></span></div>
         </section>
 
         <aside class="panel right-panel" aria-label="Księga znaków">
@@ -85,6 +84,13 @@
       <div class="below"><span>✦ &nbsp; KAŻDY ZNAK MA ZNACZENIE</span><span>STWORZONE DLA POSZUKIWACZY MAGII &nbsp; ✦</span></div>
     </main>
   </div>
+  <section id="tutorial" class="tutorial" aria-labelledby="tutorial-title" hidden>
+    <header class="tutorial-header"><div><div class="eyebrow">GRIMOIRE / NAUKA MAGII</div><h2 id="tutorial-title">Poznaj znaki</h2></div><button id="tutorial-close" type="button" aria-label="Zamknij pomoc">×</button></header>
+    <p class="tutorial-notice">Gra trwa również podczas czytania pomocy.</p>
+    <nav class="tutorial-tabs" aria-label="Działy pomocy"><button type="button" data-tab="sigils" aria-pressed="true">ZNAKI</button><button type="button" data-tab="combos" aria-pressed="false">KOMBINACJE</button><button type="button" data-tab="attack" aria-pressed="false">ATAK</button></nav>
+    <div id="tutorial-content" class="tutorial-content"></div>
+    <footer class="tutorial-footer"><button id="tutorial-skip" type="button">POMIŃ</button><button id="tutorial-complete" type="button">GOTOWE</button></footer>
+  </section>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>

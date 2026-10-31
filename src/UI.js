@@ -1,4 +1,5 @@
 import { CHARACTERS } from './characters.js';
+import Tutorial from './Tutorial.js';
 
 const byId = id => document.getElementById(id);
 const percent = (value, max) => Math.max(0, Math.min(100, max > 0 ? value / max * 100 : 0));
@@ -11,6 +12,7 @@ const characterPresentation = {
 
 export default class UI {
   constructor() {
+    this.tutorial = new Tutorial();
     this.callbacks = {};
     this.messageTimer = null;
     this.selectedCharacter = null;
@@ -63,7 +65,6 @@ export default class UI {
       const callback = this.status === 'gameover' ? this.callbacks.restart : this.callbacks.start;
       callback?.();
     });
-    byId('cast-button').addEventListener('click', () => this.callbacks.cast?.());
     byId('test-button').addEventListener('click', () => this.callbacks.test?.());
     byId('play-online-button').addEventListener('click', () => this.joinRoom('public'));
     byId('create-room-button').addEventListener('click', () => this.joinRoom('create'));
@@ -163,7 +164,8 @@ export default class UI {
     byId('regen-bar').style.width = `${percent(state.regenProgress ?? 0, 1)}%`;
     const spell = state.prepared;
     byId('spell-name').textContent = spell?.name ?? 'Brak zaklęcia';
-    byId('spell-detail').textContent = spell ? (spell.fused ? 'Fuzja żywiołów · 20 obrażeń' : 'Zaklęcie żywiołu · 10 obrażeń') : 'Narysuj znak, by przywołać moc.';
+    byId('spell-detail').textContent = spell ? (spell.fused ? 'GOTOWE · Fuzja · koszt 2 MP' : 'GOTOWE · Żywioł · koszt 1 MP') : 'Narysuj znak · koszt 1 MP.';
+    byId('spell-icon').style.color = spell?.color ?? '';
     const remaining = Math.max(0, state.fusionRemaining ?? 0);
     byId('fusion-time').textContent = remaining > 0 ? `${(remaining / 1000).toFixed(1)} s` : '—';
     byId('fusion-bar').style.width = `${percent(remaining, 1000)}%`;
@@ -177,7 +179,9 @@ export default class UI {
       byId('recognition-score').textContent = recognition.score == null ? '—' : `${Math.round(recognition.score * 100)}%`;
       byId('recognition-points').textContent = recognition.points ?? '—';
     }
+    const previousStatus = this.status;
     this.status = state.status ?? this.status;
+    if (this.status === 'playing' && previousStatus !== 'playing') this.tutorial.showFirstRun();
     const overlay = byId('overlay');
     overlay.hidden = this.status === 'playing';
     byId('arena-status').textContent = this.status === 'playing' ? 'WALKA TRWA' : this.status === 'gameover' ? 'KONIEC PRÓBY' : 'GOTOWOŚĆ';

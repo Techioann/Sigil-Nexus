@@ -31,13 +31,14 @@ test('authoritative movement, fusion, targeting, damage and disconnect', () => {
   assert.equal(world.command(a, gesture('water')).ok, true);
   time += 1000;
   assert.equal(world.command(a, gesture('fire')).fused, true);
-  assert.equal(world.command(a, { type: 'cast', targetId: a }).ok, false);
+  assert.equal(world.command(a, { type: 'cast', x: player.x, y: player.y }).ok, false);
   assert.ok(player.magic.prepared);
-  assert.equal(world.command(a, { type: 'cast', targetId: b }).ok, true);
+  const target = world.players.get(b);
+  assert.equal(world.command(a, { type: 'cast', x: target.x, y: target.y }).ok, true);
   for (let i = 0; i < 10; i++) world.tick(0.1);
   assert.equal(world.players.get(b).health, 75);
   world.command(a, gesture('fire'));
-  world.command(a, { type: 'cast', targetId: b });
+  world.command(a, { type: 'cast', x: target.x, y: target.y });
   world.leave(a);
   assert.equal(world.projectiles.length, 0);
   assert.equal(world.players.has(a), false);
@@ -83,7 +84,7 @@ test('respawn is dead-only, clears combat state and finds an unoccupied location
   world.command(a, { type: 'input', x: 1, y: 0 });
   player.health = 0;
   assert.equal(world.command(a, { type: 'input', x: 1, y: 0 }).reason, 'dead');
-  world.projectiles.push({ ownerId: b, targetId: a }, { ownerId: a, targetId: b });
+  world.projectiles.push({ ownerId: a });
   other.x = 1503; other.y = 1503;
   time = 1500;
   assert.equal(world.command(a, { type: 'respawn' }).ok, true);
@@ -124,7 +125,7 @@ test('elemental PvP hit snapshots and fusion are authoritative', () => {
   world.command(a, gesture('earth'));
   const spell = world.players.get(a).magic.prepared;
   const multiplier = world.combat.multiplier(spell.elements, enemy.element);
-  world.command(a, { type: 'cast', targetId: enemy.id });
+  world.command(a, { type: 'cast', x: enemy.x, y: enemy.y });
   for (let i = 0; i < 20 && enemy.health === 100; i++) world.tick(0.1);
   assert.equal(enemy.health, 100 - spell.damage * multiplier);
   const event = world.snapshot().hitEvents[0];
@@ -214,7 +215,7 @@ test('two WebSocket clients receive the same authoritative hit event', async t =
   enemy.element = 'fire';
   Object.assign(world.players.get(a.id), { x: enemy.x - 40, y: enemy.y });
   a.ws.send(JSON.stringify(gesture('water')));
-  a.ws.send(JSON.stringify({ type: 'cast', targetId: enemy.id }));
+  a.ws.send(JSON.stringify({ type: 'cast', x: enemy.x + 100, y: enemy.y }));
   const [first, second] = await hits;
   assert.deepEqual(first, second);
   assert.equal(first.damage, 15);

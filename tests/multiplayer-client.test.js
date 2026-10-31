@@ -47,7 +47,7 @@ test('matchmaking validates locally and preserves a private code for reconnect',
 });
 
 test('all room joins and reconnects send the selected character', () => {
-  const original = { window: globalThis.window, location: globalThis.location, WebSocket: globalThis.WebSocket, requestAnimationFrame: globalThis.requestAnimationFrame };
+  const original = { window: globalThis.window, document: globalThis.document, location: globalThis.location, WebSocket: globalThis.WebSocket, requestAnimationFrame: globalThis.requestAnimationFrame };
   const sockets = [];
   class Socket {
     constructor() { this.readyState = 0; sockets.push(this); }
@@ -55,7 +55,7 @@ test('all room joins and reconnects send the selected character', () => {
     close() { this.readyState = 3; }
     open() { this.readyState = 1; this.onopen(); }
   }
-  Object.assign(globalThis, { window: { addEventListener() {} }, location: { protocol: 'http:', host: 'test' }, WebSocket: Socket, requestAnimationFrame() {} });
+  Object.assign(globalThis, { window: { addEventListener() {} }, document: { addEventListener() {} }, location: { protocol: 'http:', host: 'test' }, WebSocket: Socket, requestAnimationFrame() {} });
   try {
     const game = new Game({ getContext: () => ({}), addEventListener() {} }, { setCallbacks() {}, setRoomStatus() {}, setConnectionStatus() {} });
     for (const mode of ['public', 'create', 'join']) {
@@ -108,7 +108,7 @@ test('remote snapshots interpolate positions rather than teleporting', () => {
   assert.ok(game.remotePlayers[0].x > 10 && game.remotePlayers[0].x < 110);
 });
 
-test('local snapshots smooth by elapsed time and targeting uses rendered positions', () => {
+test('local snapshots smooth by elapsed time and aiming uses the rendered camera', () => {
   const create = () => {
     const game = Object.create(Game.prototype);
     Object.assign(game, { id: 'a', player: new Player(0, 0), enemies: [], remotePlayers: [], damageTexts: [], seenHitEvents: new Set(), magic: {}, ui: { showMessage() {} }, network: { send: message => { game.sent = message; } }, status: 'playing', camera: { x: 0, y: 0 }, width: 100, height: 100, input: { movement: {} }, inputElapsed: 0 });
@@ -128,8 +128,11 @@ test('local snapshots smooth by elapsed time and targeting uses rendered positio
   assert.ok(Math.abs(a.player.x - b.player.x) < 1e-9);
   assert.ok(a.camera.x > 100 && a.camera.x < a.player.x);
   const remote = a.remotePlayers[0];
+  a.magic.prepared = { name: 'Water' };
   a.cast({ x: remote.x - a.camera.x + 50, y: remote.y - a.camera.y + 50 });
-  assert.deepEqual(a.sent, { type: 'cast', targetId: 'b' });
+  assert.equal(a.sent.type, 'cast');
+  assert.ok(Math.abs(a.sent.x - remote.x) < 1e-9);
+  assert.ok(Math.abs(a.sent.y - remote.y) < 1e-9);
   a.receive(state(120, 0));
   a.receive(state(1000, 100));
   assert.equal(a.player.x, 1000);
@@ -153,7 +156,7 @@ test('gesture sends bounded sanitized path with element and endpoints', () => {
   assert.ok(game.sent.points.every(p => Number.isFinite(p.x) && Number.isFinite(p.y)));
 });
 
-test('game applies authoritative snapshots and targets players without consuming spell locally', () => {
+test('game applies authoritative snapshots and aims without consuming spell locally', () => {
   const game = Object.create(Game.prototype);
   Object.assign(game, { id: 'a', player: new Player(0, 0), enemies: [], damageTexts: [], seenHitEvents: new Set(), magic: {}, ui: { showMessage() {} }, network: { send: (message) => { game.sent = message; } }, status: 'playing', camera: { x: 0, y: 0 }, width: 100, height: 100 });
   const prepared = { name: 'Fire', damage: 10 };
@@ -162,7 +165,7 @@ test('game applies authoritative snapshots and targets players without consuming
   assert.equal(game.magic.mana, 7);
   assert.equal(game.remotePlayers.length, 1);
   game.cast({ x: 70, y: 70 });
-  assert.deepEqual(game.sent, { type: 'cast', targetId: 'b' });
+  assert.deepEqual(game.sent, { type: 'cast', x: 30, y: 40 });
   assert.equal(game.magic.prepared, prepared);
   const hit = { id: 'hit1', ownerId: 'a', targetId: 'b', x: 30, y: 40, damage: 15, multiplier: 1.5, effectiveness: 'strong', color: '#f80' };
   const state = { type: 'state', players: [{ id: 'a', x: 11, y: 20, health: 90, mana: 6, maxMana: 20, prepared: null }], enemies: [], hitEvents: [hit], projectiles: [] };
@@ -173,4 +176,35 @@ test('game applies authoritative snapshots and targets players without consuming
   assert.equal(game.damageTexts.length, 1);
   assert.equal(game.damageMultiplier, 1.5);
   assert.equal(game.combatStatus, 'strong');
+});
+
+test('directional casting works without a target and missing spells give feedback', () => {
+  const sent = [], messages = [];
+  const game = Object.create(Game.prototype);
+  Object.assign(game, { status: 'playing', id: 'a', magic: { prepared: null }, camera: { x: 200, y: 300 }, width: 100, height: 80, remotePlayers: [], ui: { showMessage: message => messages.push(message) }, network: { send: message => { sent.push(message); return false; } } });
+  game.cast({ x: 90, y: 10 });
+  assert.deepEqual(messages, ['Najpierw narysuj sygil — LPM']);
+  assert.equal(sent.length, 0);
+  game.magic.prepared = { name: 'Water' };
+  game.cast({ x: 90, y: 10 });
+  game.cast({ x: 90, y: 10 });
+  assert.deepEqual(sent, [{ type: 'cast', x: 240, y: 270 }, { type: 'cast', x: 240, y: 270 }]);
+  assert.equal(game.magic.prepared.name, 'Water');
+});
+
+test('canvas RMB invokes directional attack while LMB never casts', () => {
+  const original = { window: globalThis.window, document: globalThis.document, location: globalThis.location, WebSocket: globalThis.WebSocket, requestAnimationFrame: globalThis.requestAnimationFrame };
+  const listeners = {}, sent = [];
+  const canvas = { getContext: () => ({}), getBoundingClientRect: () => ({ left: 10, top: 20 }), addEventListener: (name, fn) => { listeners[name] = fn; }, focus() {}, setPointerCapture() {} };
+  Object.assign(globalThis, { window: { addEventListener() {} }, document: { addEventListener() {} }, location: { protocol: 'http:', host: 'test' }, WebSocket: class {}, requestAnimationFrame() {} });
+  try {
+    const game = new Game(canvas, { setCallbacks() {}, showMessage() {} });
+    Object.assign(game, { status: 'playing', id: 'a', width: 100, height: 80, camera: { x: 200, y: 300 }, magic: { prepared: { name: 'Water' } }, network: { send: message => sent.push(message) } });
+    const event = button => ({ button, pointerId: 1, clientX: 100, clientY: 30, preventDefault() {} });
+    listeners.pointerdown(event(0));
+    listeners.pointerup(event(0));
+    assert.equal(sent.length, 0);
+    listeners.pointerdown(event(2));
+    assert.deepEqual(sent, [{ type: 'cast', x: 240, y: 270 }]);
+  } finally { Object.assign(globalThis, original); }
 });
